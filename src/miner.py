@@ -161,11 +161,11 @@ def main():
         device=args.device,
         # store_tasks=args.store_tasks
     )
-    refill_rate = 1 / 100
+    refill_rate = 1 #
 
     # Implementing custom limit
     # TODO: investigate the impact of TokenBucketLimiter
-    bucket = TokenBucketLimiter(20, refill_rate)
+    bucket = TokenBucketLimiter(30, refill_rate)
 
     use_testnet = args.subnetuid == 23
 
