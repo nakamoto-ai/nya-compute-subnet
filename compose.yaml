@@ -1,0 +1,33 @@
+version: '3'
+services:
+  nya-miner-1: &nya-miner-1
+    image: nya-compute-miner:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      # Don't mount the app folder. This will be explicitly copied by the dockerfile so that
+      # the container files live independent of the host.
+      - .cache:/root/.cache # sharing model cache between host and container
+      - /root/.commune:/root/.commune # sharing the key between host and container
+    #    uncomment if you like to load environment variables from a file instead of setting them here
+    #    env_file:
+    #    - ./.example.env # in case you like to load any environment variables from a file
+    environment:
+      # Setting the environment variables used in run_miner.sh script
+      - PORT=1919
+      - DEVICE=cuda
+      - KEY_NAME=MY_KEY_NAME # change this to your key name
+    ports:
+      - "1919:1919"
+    working_dir: /app
+    command: [ "/bin/bash", "-c", "/app/scripts/startup_script.sh" ]
+#  TODO: add configs to run multiple miners on the same host
+#  https://stackoverflow.com/questions/39663096/docker-compose-creating-multiple-instances-for-the-same-image
+#  nya-miner-2:
+#    <<: *nya-miner-1
+#    environment:
+#      - PORT=1920
+#    ports:
+#      - "1920:1920"
+
