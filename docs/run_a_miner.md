@@ -44,15 +44,25 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-chmod +x scripts/run_miner.sh
-
 export PORT=1914 
 export KEY_NAME=nya-miner 
 export DEVICE=cuda 
 
-python src/miner.py --port $PORT --device $DEVICE --keyfile $KEY_NAME
+python src/miner.py --port $PORT --device $DE VICE --keyfile $KEY_NAME
 
 
 comx --testnet module register nya-miner [KEYNAME] --ip [IP] --port $PORT --netuid 23
 
+```
+
+### Troubleshooting
+
+If your miner is not receiving any requests, ensure your miner is registered on the subnet. Furthermore, try the command below to ensure the API endpoint is accessible. 
+
+```bash
+curl -X POST MINER_IP:MINER_PORT/method/compute
+```
+This command sends a request to your miner, below is the expected output:
+```angular2html
+INFO:     MINER_IP:PORT - "POST /method/compute HTTP/1.1" 400 Bad Request
 ```
