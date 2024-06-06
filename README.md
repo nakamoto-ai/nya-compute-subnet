@@ -26,9 +26,8 @@ Please refer to the guide on how to [run a miner](docs/run_a_miner.md) to get st
 
 1. [Overview](#Overview)
 2. [Current Task: Knowledge Distillation](#task)
-3. [Technical Specifications](#technical)
-4. [Frequently Asked Questions](#faq)
-5. [Future Plans](#future)
+3. [Frequently Asked Questions](#faq)
+4. [Future Plans](#future)
 
 ## Overview
 
