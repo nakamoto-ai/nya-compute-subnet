@@ -34,3 +34,25 @@
     ```bash
     comx --testnet module register nya-miner [KEYNAME] --ip [IP] --port 9910 --netuid 23
     ```
+
+### Virtual Environment
+
+```bash
+git clone https://github.com/nakamoto-ai/nya-compute-subnet.git
+cd nya-compute-subnet
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+chmod +x scripts/run_miner.sh
+
+export PORT=1914 
+export KEY_NAME=nya-miner 
+export DEVICE=cuda 
+
+python src/miner.py --port $PORT --device $DEVICE --keyfile $KEY_NAME
+
+
+comx --testnet module register nya-miner [KEYNAME] --ip [IP] --port $PORT --netuid 23
+
+```
