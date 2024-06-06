@@ -1,4 +1,3 @@
-version: '3'
 services:
   nya-miner-1: &nya-miner-1
     image: nya-compute-miner:latest
