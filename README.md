@@ -2,7 +2,7 @@
 
 # **Nya - a Compute Subnet** <!-- omit in toc -->
 
-*Nya [means](https://www.thebump.com/b/swahili-baby-names) purpose in Swahili*
+*Nya [means](https://www.thebump.com/b/nya-baby-name) purpose in Swahili*
 
 by **Nakamoto Mining**, with the support of **Commune AI**
 

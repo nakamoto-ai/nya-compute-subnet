@@ -41,7 +41,7 @@ class NyaComputeMiner(Module):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForMaskedLM.from_pretrained(model_name)
         self.batch_size = batch_size
-        self.store_tasks = store_tasks
+        # self.store_tasks = store_tasks
 
         if device == "cuda" and not torch.cuda.is_available():
             logger.error("CUDA is not available. aborting.")
@@ -140,8 +140,21 @@ def main():
 
     args = parser.parse_args()
 
+    port = args.port
+
+    if isinstance(port, str) and port.isdigit():
+        port = int(port)
+    else:
+        logger.error("Port must be an integer. aborting.")
+        raise ValueError("Port must be an integer.")
+
     # key = generate_keypair()
-    key = classic_load_key(args.keyfile)
+
+    try:
+        key = classic_load_key(args.keyfile)
+    except FileNotFoundError:
+        logger.error(f"Key file {args.keyfile} not found. aborting.")
+        raise FileNotFoundError(f"Key file {args.keyfile} not found.")
 
     miner = NyaComputeMiner(
         batch_size=args.batch_size,
@@ -166,7 +179,7 @@ def main():
                           use_testnet=use_testnet)
     app = server.get_fastapi_app()
 
-    uvicorn.run(app, host=args.ip, port=args.port)
+    uvicorn.run(app, host=args.ip, port=port)
 
 
 if __name__ == "__main__":

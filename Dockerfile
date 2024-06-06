@@ -9,6 +9,7 @@ WORKDIR /app
 
 RUN pip install -r requirements.txt
 
+RUN chmod +x /app/scripts/run_miner.sh
 
 WORKDIR /app
 
