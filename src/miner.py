@@ -86,14 +86,13 @@ class NyaComputeMiner(Module):
         encoded = input_data.map(self.batch_encode,
                                  batched=True,
                                  remove_columns=["text"],
-                                 batch_size=64,
-
+                                 # batch_size=64,
                                  )
 
         # TODO: optimize for multi-GPU environments
         # TODO: calculate the optimal batch size for the model
 
-        data_loader = DataLoader(encoded, batch_size=1)
+        data_loader = DataLoader(encoded, batch_size=self.batch_size)
         logger.debug(f"Data loaded in {time.perf_counter() - start_time:.2f} seconds")
         # last_hidden_states = []
         logit_list = []
@@ -144,7 +143,7 @@ def main():
     parser.add_argument("--ip", help="IP address to bind the server to.", default="0.0.0.0")
     parser.add_argument("--port", help="Port to bind the server to.", default=9910)
     parser.add_argument("--device_map", help="Device to run the model on.", default="auto")
-    parser.add_argument("--batch_size", help="Batch size for the model.", default=64)
+    parser.add_argument("--batch_size", help="Batch size for the model.", default=8)
 
     parser.add_argument("--subnetuid", help="Subnet UID to bind the server to.", default=23)
 
