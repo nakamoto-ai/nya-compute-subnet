@@ -36,7 +36,8 @@ class NyaComputeMiner(Module):
                  # store_tasks: bool = False,
                  ):
         super().__init__()
-        model_name = "microsoft/Phi-3-medium-4k-instruct"
+
+        model_name = "distilbert/distilbert-base-uncased"
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForMaskedLM.from_pretrained(model_name)
@@ -161,7 +162,7 @@ def main():
         device=args.device,
         # store_tasks=args.store_tasks
     )
-    refill_rate = 1 #
+    refill_rate = 1  #
 
     # Implementing custom limit
     # TODO: investigate the impact of TokenBucketLimiter
