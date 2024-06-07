@@ -36,7 +36,7 @@ class NyaComputeMiner(Module):
                  # store_tasks: bool = False,
                  ):
         super().__init__()
-        model_name = "distilbert/distilbert-base-uncased"
+        model_name = "microsoft/Phi-3-medium-4k-instruct"
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForMaskedLM.from_pretrained(model_name)
