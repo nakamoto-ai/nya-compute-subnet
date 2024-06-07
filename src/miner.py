@@ -110,8 +110,8 @@ class NyaComputeMiner(Module):
 
         # last_hidden_states_bytes = [[l.numpy().tobytes() for l in batch] for batch in last_hidden_states]
         result["elapsed_time"] = elapsed_time
-        result["logit"] = logit.numpy().tolist()
-        result["logit_index"] = logit_index.numpy().tolist()
+        result["logit"] = logit.cpu().numpy().tolist()
+        result["logit_index"] = logit_index.cpu().numpy().tolist()
         logger.debug(f"Compute task completed in {elapsed_time:.2f} seconds")
 
         # TODO: must run in a separate thread to avoid delaying the response
