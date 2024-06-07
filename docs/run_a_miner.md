@@ -51,9 +51,9 @@ pip install -r requirements.txt
 
 export PORT=1914 
 export KEY_NAME=nya-miner 
-export DEVICE=cuda 
+export DEVICE_MAP=auto 
 
-python src/miner.py --port $PORT --device $DEVICE --keyfile $KEY_NAME
+python src/miner.py --port $PORT --device_map $DEVICE_MAP --keyfile $KEY_NAME
 
 
 comx --testnet module register nya-miner [KEYNAME] --ip [IP] --port $PORT --netuid 23
