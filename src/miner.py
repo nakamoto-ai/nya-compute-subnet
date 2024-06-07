@@ -92,7 +92,7 @@ class NyaComputeMiner(Module):
         # TODO: optimize for multi-GPU environments
         # TODO: calculate the optimal batch size for the model
 
-        data_loader = DataLoader(encoded, batch_size=self.batch_size)
+        data_loader = DataLoader(encoded, self.batch_size)
         logger.debug(f"Data loaded in {time.perf_counter() - start_time:.2f} seconds")
         # last_hidden_states = []
         logit_list = []
@@ -153,12 +153,13 @@ def main():
 
     args = parser.parse_args()
 
+    logger.info(f"Parsed arguments: {args}")
+
     miner = NyaComputeMiner(
         batch_size=args.batch_size,
         device_map=args.device_map,
         # store_tasks=args.store_tasks
     )
-
 
     port = args.port
 
@@ -176,7 +177,6 @@ def main():
     except FileNotFoundError:
         logger.error(f"Key file {args.keyfile} not found. aborting.")
         raise FileNotFoundError(f"Key file {args.keyfile} not found.")
-
 
     refill_rate = 1  #
 
