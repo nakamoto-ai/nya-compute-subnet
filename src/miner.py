@@ -11,7 +11,11 @@ from communex.module.server import ModuleServer
 from datasets import Dataset
 from keylimiter import TokenBucketLimiter
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, AutoModelForMaskedLM
+from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModelForCausalLM
+
+from datasets.utils.logging import disable_progress_bar
+
+disable_progress_bar()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -32,25 +36,33 @@ class NyaComputeMiner(Module):
 
     def __init__(self,
                  batch_size: int = 64,
-                 device: str = "cuda",
+                 device_map: str = "auto",
                  # store_tasks: bool = False,
                  ):
         super().__init__()
 
-        model_name = "distilbert/distilbert-base-uncased"
+        # model_name = "distilbert/distilbert-base-uncased"
+        from transformers import pipeline
+        model_name = "microsoft/Phi-3-mini-4k-instruct"
+        # pipe = pipeline("text-generation", model=model_name, trust_remote_code=True)
 
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForMaskedLM.from_pretrained(model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        self.model = AutoModelForCausalLM.from_pretrained(model_name,
+                                                          trust_remote_code=True,
+                                                          torch_dtype=torch.float16,
+                                                          load_in_4bit=True,
+                                                          device_map=device_map
+                                                          )
         self.batch_size = batch_size
         # self.store_tasks = store_tasks
 
-        if device == "cuda" and not torch.cuda.is_available():
+        if device_map == "cuda" and not torch.cuda.is_available():
             logger.error("CUDA is not available. aborting.")
             raise ValueError("CUDA is not available.")
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        self.model = self.model.to(self.device)  # .half()
+        # self.model = self.model.to(self.device)  # .half()
         self.model.eval()
 
         logger.info(f"Initialized {self.__class__.__name__}, using device: {self.device}")
@@ -74,13 +86,14 @@ class NyaComputeMiner(Module):
         encoded = input_data.map(self.batch_encode,
                                  batched=True,
                                  remove_columns=["text"],
-                                 batch_size=64
+                                 batch_size=64,
+
                                  )
 
         # TODO: optimize for multi-GPU environments
         # TODO: calculate the optimal batch size for the model
 
-        data_loader = DataLoader(encoded, batch_size=64)
+        data_loader = DataLoader(encoded, batch_size=1)
         logger.debug(f"Data loaded in {time.perf_counter() - start_time:.2f} seconds")
         # last_hidden_states = []
         logit_list = []
@@ -130,7 +143,7 @@ def main():
     parser.add_argument("--keyfile", help="Name of the key file", default="nya-miner")
     parser.add_argument("--ip", help="IP address to bind the server to.", default="0.0.0.0")
     parser.add_argument("--port", help="Port to bind the server to.", default=9910)
-    parser.add_argument("--device", help="Device to run the model on.", default="cuda")
+    parser.add_argument("--device_map", help="Device to run the model on.", default="auto")
     parser.add_argument("--batch_size", help="Batch size for the model.", default=64)
 
     parser.add_argument("--subnetuid", help="Subnet UID to bind the server to.", default=23)
@@ -141,13 +154,21 @@ def main():
 
     args = parser.parse_args()
 
+    miner = NyaComputeMiner(
+        batch_size=args.batch_size,
+        device_map=args.device_map,
+        # store_tasks=args.store_tasks
+    )
+
+
     port = args.port
 
-    if isinstance(port, str) and port.isdigit():
-        port = int(port)
-    else:
-        logger.error("Port must be an integer. aborting.")
-        raise ValueError("Port must be an integer.")
+    if not isinstance(port, int):
+        if isinstance(port, str) and port.isdigit():
+            port = int(port)
+        else:
+            logger.error("Port must be an integer. aborting.")
+            raise ValueError("Port must be an integer.")
 
     # key = generate_keypair()
 
@@ -157,11 +178,7 @@ def main():
         logger.error(f"Key file {args.keyfile} not found. aborting.")
         raise FileNotFoundError(f"Key file {args.keyfile} not found.")
 
-    miner = NyaComputeMiner(
-        batch_size=args.batch_size,
-        device=args.device,
-        # store_tasks=args.store_tasks
-    )
+
     refill_rate = 1  #
 
     # Implementing custom limit

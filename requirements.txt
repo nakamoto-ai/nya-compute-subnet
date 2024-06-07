@@ -3,3 +3,6 @@ transformers
 datasets
 pandas
 torch
+tiktoken
+accelerate
+bitsandbytes

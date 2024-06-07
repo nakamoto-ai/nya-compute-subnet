@@ -9,6 +9,11 @@
 5. You are encouraged to customize the miner's code to improve performance and efficiency on your specific hardware; but avoid taking shortcuts. 
 
 
+## Minimum Hardware Requirements
+
+```
+24gb GPU VRAM, tested on NVIDIA RTX A5000
+```
 
 
 ## Running a Miner <a name="miner" />
