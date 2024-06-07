@@ -6,3 +6,4 @@ torch
 tiktoken
 accelerate
 bitsandbytes
+flash-attention

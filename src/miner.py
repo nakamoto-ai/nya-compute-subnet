@@ -143,7 +143,7 @@ def main():
     parser.add_argument("--ip", help="IP address to bind the server to.", default="0.0.0.0")
     parser.add_argument("--port", help="Port to bind the server to.", default=9910)
     parser.add_argument("--device_map", help="Device to run the model on.", default="auto")
-    parser.add_argument("--batch_size", help="Batch size for the model.", default=8)
+    parser.add_argument("--batch_size", help="Batch size for the model.", default=8, type=int)
 
     parser.add_argument("--subnetuid", help="Subnet UID to bind the server to.", default=23)
 
@@ -155,8 +155,10 @@ def main():
 
     logger.info(f"Parsed arguments: {args}")
 
+    batch_size = int(args.batch_size)
+
     miner = NyaComputeMiner(
-        batch_size=args.batch_size,
+        batch_size=batch_size,
         device_map=args.device_map,
         # store_tasks=args.store_tasks
     )
