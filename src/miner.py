@@ -130,13 +130,16 @@ class NyaComputeMiner(Module):
 
                     top_k_probabilities, top_k_probabilities_indices = torch.topk(probabilities, 16, dim=-1)
 
-                    probabilities_list.append(top_k_probabilities)
-                    probabilities_index_list.append(top_k_probabilities_indices)
+                    for i in range(self.batch_size):
+                        probabilities_list.append(top_k_probabilities[i])
+                        probabilities_index_list.append(top_k_probabilities_indices[i])
 
                 except RuntimeError as e:  # Out of memory
                     logger.error(f"Out of memory, skipping batch.")
-                    probabilities_list.append(torch.ones(self.batch_size, 16, dtype=torch.float16) * -1.0)
-                    probabilities_index_list.append(torch.ones(self.batch_size, 16, dtype=torch.int16) * -1)
+                    invalid_result = torch.ones(1, dtype=torch.float16) * -1.0
+                    for i in range(self.batch_size):
+                        probabilities_list.append(invalid_result)
+                        probabilities_index_list.append(invalid_result)
                     # logger.error(e)
                     # raise RuntimeError("Out of memory.")
 
