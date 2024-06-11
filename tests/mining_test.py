@@ -1,3 +1,4 @@
+import argparse
 import logging
 import time
 
@@ -14,9 +15,9 @@ logger = logging.getLogger(__name__)
 logger.info(f"Running {__file__}")
 
 
-def main():
+def test_mining(debug: bool = False):
     dataset = load_dataset("allenai/c4", "en", streaming=True)
-    compute_miner = miner.NyaComputeMiner(device_map="auto", debug=True)
+    compute_miner = miner.NyaComputeMiner(device_map="auto", debug=debug)
 
     train_set = dataset["train"]
 
@@ -36,6 +37,16 @@ def main():
         time_per_task = time_elapsed / workload_amount
         workload_amount = max_time / time_per_task
         logger.info(f"Time per task: {time_per_task}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Load validator configuration.")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode.")
+
+    args = parser.parse_args()
+    debug = args.debug
+
+    test_mining(debug)
 
 
 if __name__ == '__main__':
