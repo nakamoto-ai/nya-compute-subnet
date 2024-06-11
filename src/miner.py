@@ -47,9 +47,12 @@ class NyaComputeMiner(Module):
 
         else:
             # model_name = "microsoft/Phi-3-mini-4k-instruct"
-            model_name = "microsoft/Phi-3-mini-4k-instruct-gguf"
-            file_name = "Phi-3-mini-4k-instruct-q4.gguf"
+            # model_name = "microsoft/Phi-3-mini-4k-instruct-gguf"
+            # file_name = "Phi-3-mini-4k-instruct-q4.gguf"
             # minimal_loss_file_name = "Phi-3-mini-4k-instruct-fp16.gguf"
+            model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
+            file_name = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
+
             self.model = AutoModelForCausalLM.from_pretrained(model_name,
                                                               gguf_file=file_name,
                                                               trust_remote_code=True,
