@@ -7,3 +7,4 @@ tiktoken
 accelerate
 bitsandbytes
 flash-attention
+gguf
