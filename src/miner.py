@@ -43,6 +43,8 @@ class NyaComputeMiner(Module):
                                                               # device="cuda",
                                                               # device_map=device_map
                                                               )
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+
             self.model = self.model.to("cuda")
 
         else:
@@ -61,7 +63,8 @@ class NyaComputeMiner(Module):
                                                               device_map=device_map
                                                               )
 
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True,
+                                                           gguf_file=file_name)
 
         self.batch_size = batch_size
         # self.store_tasks = store_tasks
