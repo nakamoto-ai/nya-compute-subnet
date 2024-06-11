@@ -85,7 +85,7 @@ class NyaComputeMiner(Module):
     def batch_encode(self, batch):
         return self.tokenizer(batch["text"],
                               # padding="max_length",
-                              max_length=4096,
+                              max_length=2048,
                               padding=True,
                               truncation=True,
                               return_tensors="pt")
