@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 logger.info(f"Running {__file__}")
 
 
-def test_mining(debug: bool = False):
+def test_mining(debug: bool = False, batch_size: int = 1):
     dataset = load_dataset("allenai/c4", "en", streaming=True)
-    compute_miner = miner.NyaComputeMiner(device_map="auto", debug=debug)
+    compute_miner = miner.NyaComputeMiner(device_map="auto", debug=debug, batch_size=batch_size)
 
     train_set = dataset["train"]
 
@@ -42,11 +42,13 @@ def test_mining(debug: bool = False):
 def main():
     parser = argparse.ArgumentParser(description="Load validator configuration.")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode.")
+    parser.add_argument("--batch_size", type=int, default=1, help="Batch size for the model.")
 
     args = parser.parse_args()
     debug = args.debug
+    batch_size = args.batch_size
 
-    test_mining(debug)
+    test_mining(debug, batch_size)
 
 
 if __name__ == '__main__':
