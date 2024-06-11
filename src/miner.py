@@ -134,9 +134,11 @@ class NyaComputeMiner(Module):
                     probabilities_index_list.append(top_k_probabilities_indices)
 
                 except RuntimeError as e:  # Out of memory
-                    logger.error(f"Out of memory. aborting. batch size: {self.batch_size}")
-                    logger.error(e)
-                    raise RuntimeError("Out of memory.")
+                    logger.error(f"Out of memory, skipping batch.")
+                    probabilities_list.append(torch.ones(self.batch_size, 16, dtype=torch.float16) * -1.0)
+                    probabilities_index_list.append(torch.ones(self.batch_size, 16, dtype=torch.int16) * -1)
+                    # logger.error(e)
+                    # raise RuntimeError("Out of memory.")
 
                 # top_k_logit, top_k_indices = torch.topk(output.logits, 16, dim=-1)
                 # logit_list.append(top_k_logit)
@@ -146,8 +148,11 @@ class NyaComputeMiner(Module):
         # logit = torch.cat(logit_list, dim=0).to(torch.float16)
         # logit_index = torch.cat(logit_index_list, dim=0).to(torch.int16)
 
-        task_probabilities = torch.cat(probabilities_list, dim=0).to(torch.float16)
-        task_probabilities_index = torch.cat(probabilities_index_list, dim=0).to(torch.int16)
+        # task_probabilities = torch.cat(probabilities_list, dim=0).to(torch.float16)
+        # task_probabilities_index = torch.cat(probabilities_index_list, dim=0).to(torch.int16)
+
+        probabilities_list = [p.to(torch.float16).cpu().numpy().tolist() for p in probabilities_list]
+        probabilities_index_list = [p.to(torch.int16).cpu().numpy().tolist() for p in probabilities_index_list]
 
         end_time = time.perf_counter()
 
@@ -160,8 +165,8 @@ class NyaComputeMiner(Module):
         result["elapsed_time"] = elapsed_time
         # result["logit"] = logit.cpu().numpy().tolist()
         # result["logit_index"] = logit_index.cpu().numpy().tolist()
-        result["probabilities"] = task_probabilities.cpu().numpy().tolist()
-        result["probabilities_index"] = task_probabilities_index.cpu().numpy().tolist()
+        result["probabilities"] = probabilities_list
+        result["probabilities_index"] = probabilities_index_list
         logger.debug(f"Compute task completed in {elapsed_time:.2f} seconds")
 
         # TODO: must run in a separate thread to avoid delaying the response
