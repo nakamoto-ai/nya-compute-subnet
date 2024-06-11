@@ -21,7 +21,7 @@ def main():
     train_set = dataset["train"]
 
     # add index number to each row in train_set
-    max_time = 150
+    max_time = 30
     workload_amount = 32
     while True:
         start_time = time.perf_counter()

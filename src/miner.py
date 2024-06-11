@@ -108,17 +108,22 @@ class NyaComputeMiner(Module):
             for batch in data_loader:
                 batch = {k: torch.stack(batch["input_ids"], dim=1).to(self.device) for k, v in batch.items()}
 
-                output = self.model(**batch,
-                                    output_hidden_states=True,
-                                    return_dict=True
-                                    )
+                try:
+                    output = self.model(**batch,
+                                        output_hidden_states=True,
+                                        return_dict=True
+                                        )
+                    probabilities = torch.nn.functional.softmax(output.logits, dim=-1)
 
-                probabilities = torch.nn.functional.softmax(output.logits, dim=-1)
+                    top_k_probabilities, top_k_probabilities_indices = torch.topk(probabilities, 16, dim=-1)
 
-                top_k_probabilities, top_k_probabilities_indices = torch.topk(probabilities, 16, dim=-1)
+                    probabilities_list.append(top_k_probabilities)
+                    probabilities_index_list.append(top_k_probabilities_indices)
 
-                probabilities_list.append(top_k_probabilities)
-                probabilities_index_list.append(top_k_probabilities_indices)
+                except RuntimeError as e:  # Out of memory
+                    logger.error(f"Out of memory. aborting. batch size: {self.batch_size}")
+                    logger.error(e)
+                    raise RuntimeError("Out of memory.")
 
                 # top_k_logit, top_k_indices = torch.topk(output.logits, 16, dim=-1)
                 # logit_list.append(top_k_logit)
