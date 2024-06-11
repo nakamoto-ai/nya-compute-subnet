@@ -22,8 +22,8 @@ def test_mining(debug: bool = False, batch_size: int = 1):
     train_set = dataset["train"]
 
     # add index number to each row in train_set
-    max_time = 30
-    workload_amount = 32
+    max_time = 5
+    workload_amount = 5
     while True:
         start_time = time.perf_counter()
         train_set_list = list(train_set.take(workload_amount))
@@ -35,7 +35,7 @@ def test_mining(debug: bool = False, batch_size: int = 1):
         time_elapsed = end_time - start_time
 
         time_per_task = time_elapsed / workload_amount
-        workload_amount = max_time / time_per_task
+        workload_amount = int(max_time / time_per_task)
         logger.info(f"Time per task: {time_per_task}")
 
 
