@@ -23,6 +23,7 @@ logger.info(f"Running {__file__}")
 
 
 class NyaComputeMiner(Module):
+    version = "0.1"
 
     def __init__(self,
                  batch_size: int = 64,
@@ -135,7 +136,8 @@ class NyaComputeMiner(Module):
                         probabilities_index_list.append(top_k_probabilities_indices[i])
 
                 except RuntimeError as e:  # Out of memory
-                    logger.error(f"Out of memory, skipping batch.")
+                    logger.error(
+                        f"Out of memory, skipping batch. batch size: {self.batch_size}, length: {batch['input_ids'].shape[1]}")
                     invalid_result = torch.ones(1, dtype=torch.float16) * -1.0
                     for i in range(self.batch_size):
                         probabilities_list.append(invalid_result)
@@ -170,6 +172,7 @@ class NyaComputeMiner(Module):
         # result["logit_index"] = logit_index.cpu().numpy().tolist()
         result["probabilities"] = probabilities_list
         result["probabilities_index"] = probabilities_index_list
+        result["miner_version"] = self.version
         logger.debug(f"Compute task completed in {elapsed_time:.2f} seconds")
 
         # TODO: must run in a separate thread to avoid delaying the response
