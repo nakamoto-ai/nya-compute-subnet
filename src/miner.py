@@ -36,7 +36,7 @@ class NyaComputeMiner(Module):
             # model_name = "google-bert/bert-base-cased"
             model_name = "distilbert/distilbert-base-uncased"
             from transformers import AutoModelForMaskedLM
-            self.model = AutoModelForMaskedLM .from_pretrained(model_name,
+            self.model = AutoModelForMaskedLM.from_pretrained(model_name,
                                                               # trust_remote_code=True,
                                                               # torch_dtype=torch.float16,
                                                               # load_in_4bit=True,
@@ -46,17 +46,19 @@ class NyaComputeMiner(Module):
             self.model = self.model.to("cuda")
 
         else:
-            model_name = "microsoft/Phi-3-mini-4k-instruct"
+            # model_name = "microsoft/Phi-3-mini-4k-instruct"
+            model_name = "microsoft/Phi-3-mini-4k-instruct-gguf"
+            file_name = "Phi-3-mini-4k-instruct-q4.gguf"
+            # minimal_loss_file_name = "Phi-3-mini-4k-instruct-fp16.gguf"
             self.model = AutoModelForCausalLM.from_pretrained(model_name,
+                                                              gguf_file=file_name,
                                                               trust_remote_code=True,
-                                                              torch_dtype=torch.float16,
-                                                              load_in_4bit=True,
+                                                              # torch_dtype=torch.float16,
+                                                              # load_in_4bit=True,
                                                               device_map=device_map
                                                               )
 
-
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-
 
         self.batch_size = batch_size
         # self.store_tasks = store_tasks
