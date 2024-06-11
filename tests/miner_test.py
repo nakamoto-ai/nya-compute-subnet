@@ -11,7 +11,6 @@ class MyTestCase(unittest.TestCase):
         compute_miner = miner.NyaComputeMiner(device_map="auto", debug=True)
 
         dataset = load_dataset("allenai/c4", "en", streaming=True)
-
         train_set = dataset["train"]
 
         # add index number to each row in train_set
