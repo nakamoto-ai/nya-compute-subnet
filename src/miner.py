@@ -66,6 +66,9 @@ class NyaComputeMiner(Module):
             self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True,
                                                            gguf_file=file_name)
 
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+
         self.batch_size = batch_size
         # self.store_tasks = store_tasks
 
@@ -81,7 +84,8 @@ class NyaComputeMiner(Module):
 
     def batch_encode(self, batch):
         return self.tokenizer(batch["text"],
-                              padding="max_length",
+                              # padding="max_length",
+                              padding=True,
                               truncation=True,
                               return_tensors="pt")
 
