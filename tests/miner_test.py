@@ -8,7 +8,7 @@ import src.miner as miner
 class MyTestCase(unittest.TestCase):
 
     def test_correct_input(self):
-        compute_miner = miner.NyaComputeMiner()
+        compute_miner = miner.NyaComputeMiner(device_map="auto", debug=True)
 
         dataset = load_dataset("allenai/c4", "en", streaming=True)
 

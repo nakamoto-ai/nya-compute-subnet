@@ -1,7 +1,7 @@
 import argparse
 import logging
-import pandas as pd
 import time
+
 import torch
 import uvicorn
 from communex.compat.key import classic_load_key
@@ -9,11 +9,10 @@ from communex.module import endpoint
 from communex.module.module import Module
 from communex.module.server import ModuleServer
 from datasets import Dataset
+from datasets.utils.logging import disable_progress_bar
 from keylimiter import TokenBucketLimiter
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModelForCausalLM
-
-from datasets.utils.logging import disable_progress_bar
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 disable_progress_bar()
 
@@ -24,35 +23,41 @@ logger.info(f"Running {__file__}")
 
 
 class NyaComputeMiner(Module):
-    """
-    A module class for mining and generating responses to prompts.
-
-    Attributes:
-        None
-
-    Methods:
-        generate: Generates a response to a given prompt using a specified model.
-    """
 
     def __init__(self,
                  batch_size: int = 64,
                  device_map: str = "auto",
                  # store_tasks: bool = False,
+                 debug: bool = False
                  ):
         super().__init__()
 
-        # model_name = "distilbert/distilbert-base-uncased"
-        from transformers import pipeline
-        model_name = "microsoft/Phi-3-mini-4k-instruct"
-        # pipe = pipeline("text-generation", model=model_name, trust_remote_code=True)
+        if debug:
+            # model_name = "google-bert/bert-base-cased"
+            model_name = "distilbert/distilbert-base-uncased"
+            from transformers import AutoModelForMaskedLM
+            self.model = AutoModelForMaskedLM .from_pretrained(model_name,
+                                                              # trust_remote_code=True,
+                                                              # torch_dtype=torch.float16,
+                                                              # load_in_4bit=True,
+                                                              # device="cuda",
+                                                              # device_map=device_map
+                                                              )
+            self.model = self.model.to("cuda")
+
+        else:
+            model_name = "microsoft/Phi-3-mini-4k-instruct"
+            self.model = AutoModelForCausalLM.from_pretrained(model_name,
+                                                              trust_remote_code=True,
+                                                              torch_dtype=torch.float16,
+                                                              load_in_4bit=True,
+                                                              device_map=device_map
+                                                              )
+
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        self.model = AutoModelForCausalLM.from_pretrained(model_name,
-                                                          trust_remote_code=True,
-                                                          torch_dtype=torch.float16,
-                                                          load_in_4bit=True,
-                                                          device_map=device_map
-                                                          )
+
+
         self.batch_size = batch_size
         # self.store_tasks = store_tasks
 
@@ -62,7 +67,6 @@ class NyaComputeMiner(Module):
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        # self.model = self.model.to(self.device)  # .half()
         self.model.eval()
 
         logger.info(f"Initialized {self.__class__.__name__}, using device: {self.device}")
@@ -95,8 +99,10 @@ class NyaComputeMiner(Module):
         data_loader = DataLoader(encoded, self.batch_size)
         logger.debug(f"Data loaded in {time.perf_counter() - start_time:.2f} seconds")
         # last_hidden_states = []
-        logit_list = []
-        logit_index_list = []
+        # logit_list = []
+        # logit_index_list = []
+        probabilities_list = []
+        probabilities_index_list = []
         logger.debug(f"Starting forward pass...")
         with torch.no_grad():
             for batch in data_loader:
@@ -107,13 +113,24 @@ class NyaComputeMiner(Module):
                                     return_dict=True
                                     )
 
-                top_k_logit, top_k_indices = torch.topk(output.logits, 16, dim=-1)
-                logit_list.append(top_k_logit)
-                logit_index_list.append(top_k_indices)
+                probabilities = torch.nn.functional.softmax(output.logits, dim=-1)
+
+                top_k_probabilities, top_k_probabilities_indices = torch.topk(probabilities, 16, dim=-1)
+
+                probabilities_list.append(top_k_probabilities)
+                probabilities_index_list.append(top_k_probabilities_indices)
+
+                # top_k_logit, top_k_indices = torch.topk(output.logits, 16, dim=-1)
+                # logit_list.append(top_k_logit)
+                # logit_index_list.append(top_k_indices)
         logger.debug(f"Forward pass completed in {time.perf_counter() - start_time:.2f} seconds")
 
-        logit = torch.cat(logit_list, dim=0).to(torch.float16)
-        logit_index = torch.cat(logit_index_list, dim=0).to(torch.int16)
+        # logit = torch.cat(logit_list, dim=0).to(torch.float16)
+        # logit_index = torch.cat(logit_index_list, dim=0).to(torch.int16)
+
+        task_probabilities = torch.cat(probabilities_list, dim=0).to(torch.float16)
+        task_probabilities_index = torch.cat(probabilities_index_list, dim=0).to(torch.int16)
+
         end_time = time.perf_counter()
 
         elapsed_time = end_time - start_time
@@ -123,8 +140,10 @@ class NyaComputeMiner(Module):
 
         # last_hidden_states_bytes = [[l.numpy().tobytes() for l in batch] for batch in last_hidden_states]
         result["elapsed_time"] = elapsed_time
-        result["logit"] = logit.cpu().numpy().tolist()
-        result["logit_index"] = logit_index.cpu().numpy().tolist()
+        # result["logit"] = logit.cpu().numpy().tolist()
+        # result["logit_index"] = logit_index.cpu().numpy().tolist()
+        result["probabilities"] = task_probabilities.cpu().numpy().tolist()
+        result["probabilities_index"] = task_probabilities_index.cpu().numpy().tolist()
         logger.debug(f"Compute task completed in {elapsed_time:.2f} seconds")
 
         # TODO: must run in a separate thread to avoid delaying the response
