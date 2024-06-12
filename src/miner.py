@@ -66,9 +66,11 @@ class NyaComputeMiner(Module):
             model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
             file_name = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
 
+            commit_hash = "ce89f595755a4bf2e2e05d155cc43cb847c78978"
             self.model = AutoModelForCausalLM.from_pretrained(model_name,
                                                               gguf_file=file_name,
                                                               trust_remote_code=True,
+                                                              revision=commit_hash,
                                                               # torch_dtype=torch.float16,
                                                               # load_in_4bit=True,
                                                               device_map=device_map
