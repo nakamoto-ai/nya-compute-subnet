@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import logging
 import time
 
@@ -16,8 +17,17 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 
 disable_progress_bar()
 
-logging.basicConfig(level=logging.INFO)
+time_str = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+
+logging.basicConfig(
+    # filename=f"/logs/nya_miner_{time_str}.log",
+    # filemode='a',
+    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+    datefmt='%H:%M:%S',
+    level=logging.INFO)
+
 logger = logging.getLogger(__name__)
+# logger.addHandler(logging.StreamHandler())
 
 logger.info(f"Running {__file__}")
 
@@ -86,7 +96,7 @@ class NyaComputeMiner(Module):
     def batch_encode(self, batch):
         return self.tokenizer(batch["text"],
                               # padding="max_length",
-                              max_length=2048,
+                              max_length=1024,
                               padding=True,
                               truncation=True,
                               return_tensors="pt")
