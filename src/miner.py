@@ -97,7 +97,7 @@ class NyaComputeMiner(Module):
         return self.tokenizer(batch["text"],
                               # padding="max_length",
                               max_length=1024,
-                              padding=True,
+                              padding="longest",
                               truncation=True,
                               return_tensors="pt")
 
@@ -114,12 +114,13 @@ class NyaComputeMiner(Module):
         encoded = input_data.map(self.batch_encode,
                                  batched=True,
                                  remove_columns=["text"],
-                                 # batch_size=64,
+                                 batch_size=self.batch_size,
                                  )
 
         # TODO: optimize for multi-GPU environments
         # TODO: calculate the optimal batch size for the model
 
+        encoded.set_format(type="torch", columns=["input_ids", "attention_mask"])
         data_loader = DataLoader(encoded, self.batch_size)
         logger.debug(f"Data loaded in {time.perf_counter() - start_time:.2f} seconds")
         # last_hidden_states = []
@@ -130,8 +131,7 @@ class NyaComputeMiner(Module):
         logger.debug(f"Starting forward pass...")
         with torch.no_grad():
             for batch in data_loader:
-                batch = {k: torch.stack(batch["input_ids"], dim=1).to(self.device) for k, v in batch.items()}
-
+                batch = {k: v.to(self.device) for k, v in batch.items()}
                 try:
                     output = self.model(**batch,
                                         output_hidden_states=True,
@@ -141,9 +141,10 @@ class NyaComputeMiner(Module):
 
                     top_k_probabilities, top_k_probabilities_indices = torch.topk(probabilities, 16, dim=-1)
 
-                    for i in range(self.batch_size):
-                        probabilities_list.append(top_k_probabilities[i])
-                        probabilities_index_list.append(top_k_probabilities_indices[i])
+                    for i in range(batch["input_ids"].shape[0]):
+                        current_input_len = batch["attention_mask"][i].sum()
+                        probabilities_list.append(top_k_probabilities[i][:current_input_len])
+                        probabilities_index_list.append(top_k_probabilities[i][:current_input_len])
 
                 except RuntimeError as e:  # Out of memory
                     logger.error(
