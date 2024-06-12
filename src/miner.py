@@ -56,7 +56,7 @@ class NyaComputeMiner(Module):
                                                               )
             self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
-            self.model = self.model.to("cuda")
+            self.model = self.model.to("cuda").half()
 
         else:
             # model_name = "microsoft/Phi-3-mini-4k-instruct"
@@ -76,7 +76,8 @@ class NyaComputeMiner(Module):
                                                               device_map=device_map
                                                               )
 
-            self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True,
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name,
+                                                           trust_remote_code=True,
                                                            gguf_file=file_name)
 
         if self.tokenizer.pad_token is None:
