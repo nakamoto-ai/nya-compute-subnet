@@ -144,7 +144,7 @@ class NyaComputeMiner(Module):
                     for i in range(batch["input_ids"].shape[0]):
                         current_input_len = batch["attention_mask"][i].sum()
                         probabilities_list.append(top_k_probabilities[i][:current_input_len])
-                        probabilities_index_list.append(top_k_probabilities[i][:current_input_len])
+                        probabilities_index_list.append(top_k_probabilities_indices[i][:current_input_len])
 
                 except RuntimeError as e:  # Out of memory
                     logger.error(
