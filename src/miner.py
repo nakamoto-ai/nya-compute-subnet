@@ -145,9 +145,9 @@ class NyaComputeMiner(Module):
                     top_k_probabilities, top_k_probabilities_indices = torch.topk(probabilities, 16, dim=-1)
 
                     for i in range(batch["input_ids"].shape[0]):
-                        current_input_len = batch["attention_mask"][i].sum()
-                        probabilities_list.append(top_k_probabilities[i][:current_input_len])
-                        probabilities_index_list.append(top_k_probabilities_indices[i][:current_input_len])
+                        indices = torch.nonzero(batch["attention_mask"][i])
+                        probabilities_list.append(top_k_probabilities[i][indices])
+                        probabilities_index_list.append(top_k_probabilities_indices[i][indices])
 
                 except RuntimeError as e:  # Out of memory
                     logger.error(
