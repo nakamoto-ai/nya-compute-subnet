@@ -15,6 +15,12 @@
 24gb GPU VRAM, tested on NVIDIA RTX A5000
 ```
 
+## Factors to Consider
+
+1. **Hardware**: The subnet is compute-intensive. Miners with more powerful hardware will be able to complete more tasks and earn more rewards.
+2. **Uptime**: Miners must be online to receive tasks and submit results. Miners that are offline will not receive tasks and will not earn rewards.
+3. **Optimization**: Miners are rewarded based on the proportion of the total computation they complete. If you can optimize your miner to complete tasks more quickly, you will earn more rewards. Avoid taking shortcuts that compromise correctness, we perform several checks to ensure the correctness of the results. You will not receive any tasks if the validator detects incorrect results.
+
 
 ## Running a Miner <a name="miner" />
 

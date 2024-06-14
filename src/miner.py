@@ -94,6 +94,12 @@ class NyaComputeMiner(Module):
 
         self.model.eval()
 
+        device_info_list = []
+        for i in range(torch.cuda.device_count()):
+            device_info_list.append(torch.cuda.get_device_properties(i))
+
+        self.device_info = device_info_list
+
         logger.info(f"Initialized {self.__class__.__name__}, using device: {self.device}")
 
     def batch_encode(self, batch):
@@ -186,6 +192,8 @@ class NyaComputeMiner(Module):
         # result["logit_index"] = logit_index.cpu().numpy().tolist()
         result["probabilities"] = probabilities_list
         result["probabilities_index"] = probabilities_index_list
+
+        result["device_info"] = self.device_info
         result["miner_version"] = self.version
         logger.debug(f"Compute task completed in {elapsed_time:.2f} seconds")
 
