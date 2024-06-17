@@ -95,8 +95,15 @@ class NyaComputeMiner(Module):
         self.model.eval()
 
         device_info_list = []
+        attr_name_list = ["name", "gcnArchName", "is_integrated", "is_multi_gpu_board", "major",
+                          "max_threads_per_multi_processor", "minor", "multi_processor_count", "total_memory",]
         for i in range(torch.cuda.device_count()):
-            device_info_list.append(torch.cuda.get_device_properties(i))
+            device_dict = {}
+            device_properties = torch.cuda.get_device_properties(i)
+            for attr_name in attr_name_list:
+                if hasattr(torch.cuda.get_device_properties(i), attr_name):
+                    device_dict[attr_name] = getattr(device_properties, attr_name)
+            device_info_list.append(device_dict)
 
         self.device_info = device_info_list
 
