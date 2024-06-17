@@ -214,7 +214,7 @@ def main():
     parser.add_argument("--port", help="Port to bind the server to.", default=9910)
     parser.add_argument("--device_map", help="Device to run the model on.", default="auto")
     parser.add_argument("--batch_size", help="Batch size for the model.", default=1, type=int)
-    parser.add_argument("--subnetuid", help="Subnet UID to bind the server to.", default=23)
+    parser.add_argument("--subnetuid", help="Subnet UID to bind the server to.", default=26)
 
     # TODO: potentially implement this feature for logging purposes
     # TODO: ensure saving data occurs in a separate thread to avoid delaying the response
@@ -255,7 +255,7 @@ def main():
     # TODO: investigate the impact of TokenBucketLimiter
     bucket = TokenBucketLimiter(30, refill_rate)
 
-    use_testnet = args.subnetuid == 23
+    use_testnet = args.subnetuid == 26
 
     if use_testnet:
         logger.info("Using testnet")

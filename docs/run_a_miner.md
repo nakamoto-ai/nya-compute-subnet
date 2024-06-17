@@ -43,7 +43,7 @@
        ```
 5. Register the miner with the subnet:
     ```bash
-    comx --testnet module register nya-miner [KEYNAME] --ip [IP] --port 9910 --netuid 23
+    comx --testnet module register nya-miner [KEYNAME] --ip [IP] --port 9910 --netuid 26
     ```
 
 ### Virtual Environment
@@ -62,7 +62,7 @@ export DEVICE_MAP=auto
 python src/miner.py --port $PORT --device_map $DEVICE_MAP --keyfile $KEY_NAME
 
 
-comx --testnet module register nya-miner [KEYNAME] --ip [IP] --port $PORT --netuid 23
+comx --testnet module register nya-miner [KEYNAME] --ip [IP] --port $PORT --netuid 26
 
 ```
 
