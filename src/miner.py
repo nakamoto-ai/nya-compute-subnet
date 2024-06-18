@@ -247,14 +247,11 @@ def main():
     parser.add_argument("--device_map", help="Device to run the model on.", default="auto")
     parser.add_argument("--batch_size", help="Batch size for the model.", default=1, type=int)
     parser.add_argument("--subnetuid", help="Subnet UID to bind the server to.", default=26)
-
-    # TODO: potentially implement this feature for logging purposes
-    # TODO: ensure saving data occurs in a separate thread to avoid delaying the response
-    # parser.add_argument("--store_tasks", help="Store tasks in CSV format.", default=False)
+    parser.add_argument("--testnet", help="Use testnet.", default=False)
 
     args = parser.parse_args()
 
-    logger.info(f"Parsed arguments: {args}")
+    logger.info(f"Miner configuration: {args}")
 
     batch_size = int(args.batch_size)
 
@@ -273,7 +270,6 @@ def main():
             logger.error("Port must be an integer. aborting.")
             raise ValueError("Port must be an integer.")
 
-    # key = generate_keypair()
 
     try:
         key = classic_load_key(args.keyfile)
@@ -287,16 +283,14 @@ def main():
     # TODO: investigate the impact of TokenBucketLimiter
     bucket = TokenBucketLimiter(30, refill_rate)
 
-    use_testnet = args.subnetuid == 26
-
-    if use_testnet:
+    if args.testnet:
         logger.info("Using testnet")
 
     server = ModuleServer(miner,
                           key,
                           limiter=bucket,
                           subnets_whitelist=[args.subnetuid],
-                          use_testnet=use_testnet)
+                          use_testnet=args.testnet)
     app = server.get_fastapi_app()
 
     uvicorn.run(app, host=args.ip, port=port)
