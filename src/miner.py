@@ -139,7 +139,7 @@ class NyaComputeMiner(Module):
                               return_tensors="pt")
 
     @endpoint
-    def compute(self, task: list[str], signature):
+    def compute(self, task: list[str], signature: str):
         start_time = time.perf_counter()
         logger.debug(f"Received a new task with {len(task)} items.")
 
