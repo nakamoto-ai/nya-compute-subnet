@@ -32,18 +32,14 @@
     ```bash
     docker compose build
     ```
-4. Launching the miner:
-   1. If you have an NVIDIA GPU, run the following command:
-        ```bash
-        docker compose up nya-miner-gpu
-        ```
-   2. If you do not have a GPU, run the following command:
-       ```bash
-       docker compose up nya-miner-cpu
-       ```
-5. Register the miner with the subnet:
+4. Review the environment variables and ports set in the `compose.yaml` file. Once everything is in order, launch the miner using the command below:
+   ```bash
+   docker compose up nya-miner-gpu
+   ```
+
+5. Register the miner with the subnet, replacing `[KEYNAME]`, `[IP]`, and `[PORT]` with values set in the `compose.yaml` file.
     ```bash
-    comx --testnet module register nya-miner [KEYNAME] --ip [IP] --port 9910 --netuid 26
+    comx module register nya-miner [KEYNAME] --ip [IP] --port [PORT] --netuid 8
     ```
 
 ### Virtual Environment
@@ -61,8 +57,7 @@ export DEVICE_MAP=auto
 
 python src/miner.py --port $PORT --device_map $DEVICE_MAP --keyfile $KEY_NAME
 
-
-comx --testnet module register nya-miner [KEYNAME] --ip [IP] --port $PORT --netuid 26
+comx module register nya-miner $KEY_NAME --ip [IP] --port $PORT --netuid 8
 
 ```
 
@@ -74,6 +69,6 @@ If your miner is not receiving any requests, ensure your miner is registered on 
 curl -X POST MINER_IP:MINER_PORT/method/compute
 ```
 This command sends a request to your miner, below is the expected output:
-```angular2html
+```bash
 INFO:     MINER_IP:PORT - "POST /method/compute HTTP/1.1" 400 Bad Request
 ```

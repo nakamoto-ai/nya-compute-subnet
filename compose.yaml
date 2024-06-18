@@ -14,21 +14,12 @@ services:
     #    - ./.example.env # in case you like to load any environment variables from a file
     working_dir: /app
     command: [ "/bin/bash", "-c", "/app/scripts/run_miner.sh" ]
-  nya-miner-cpu:
-    <<: *nya-miner-base
-    environment:
-      # Setting the environment variables used in run_miner.sh script
-      - PORT=1919
-      - DEVICE=cpu
-      - KEY_NAME=nya-miner # change this to your key name
-    ports:
-      - "1919:1919"
   nya-miner-gpu:
     <<: *nya-miner-base
     environment:
       # Setting the environment variables used in run_miner.sh script
       - PORT=1920
-      - DEVICE=cuda
+      - DEVICE=auto
       - KEY_NAME=nya-miner # change this to your key name
     ports:
       - "1920:1920"
