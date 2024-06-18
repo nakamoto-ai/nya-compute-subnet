@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 logger.info(f"Running {__file__}")
 
 
-def verify_signature(data, signature, public_key_path="public.pem"):
+def verify_signature(data, signature, public_key_path="keys/public.pem"):
     with open(public_key_path, 'r') as key_file:
         public_key = RSA.import_key(key_file.read())
 
