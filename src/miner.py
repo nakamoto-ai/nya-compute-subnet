@@ -246,7 +246,7 @@ def main():
     parser.add_argument("--port", help="Port to bind the server to.", default=9910)
     parser.add_argument("--device_map", help="Device to run the model on.", default="auto")
     parser.add_argument("--batch_size", help="Batch size for the model.", default=1, type=int)
-    parser.add_argument("--subnetuid", help="Subnet UID to bind the server to.", default=26)
+    parser.add_argument("--subnetuid", help="Subnet UID to bind the server to.", default=8)
     parser.add_argument("--testnet", help="Use testnet.", default=False)
 
     args = parser.parse_args()
