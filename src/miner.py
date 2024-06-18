@@ -1,10 +1,14 @@
 import argparse
+import base64
 import datetime
 import logging
 import time
 
 import torch
 import uvicorn
+from Crypto.Hash import SHA256
+from Crypto.PublicKey import RSA
+from Crypto.Signature import pkcs1_15
 from communex.compat.key import classic_load_key
 from communex.module import endpoint
 from communex.module.module import Module
@@ -30,6 +34,23 @@ logger = logging.getLogger(__name__)
 # logger.addHandler(logging.StreamHandler())
 
 logger.info(f"Running {__file__}")
+
+
+def verify_signature(data, signature, public_key_path="public.pem"):
+    with open(public_key_path, 'r') as key_file:
+        public_key = RSA.import_key(key_file.read())
+
+    data_str = data
+    if not isinstance(data, str):
+        data_str = str(data)
+
+    hash_value = SHA256.new(data_str.encode('utf-8'))
+    signature = base64.b64decode(signature)
+    try:
+        pkcs1_15.new(public_key).verify(hash_value, signature)
+        return True
+    except (ValueError, TypeError):
+        return False
 
 
 class NyaComputeMiner(Module):
@@ -96,7 +117,7 @@ class NyaComputeMiner(Module):
 
         device_info_list = []
         attr_name_list = ["name", "gcnArchName", "is_integrated", "is_multi_gpu_board", "major",
-                          "max_threads_per_multi_processor", "minor", "multi_processor_count", "total_memory",]
+                          "max_threads_per_multi_processor", "minor", "multi_processor_count", "total_memory", ]
         for i in range(torch.cuda.device_count()):
             device_dict = {}
             device_properties = torch.cuda.get_device_properties(i)
@@ -118,9 +139,13 @@ class NyaComputeMiner(Module):
                               return_tensors="pt")
 
     @endpoint
-    def compute(self, task: list[str]):
+    def compute(self, task: list[str], signature):
         start_time = time.perf_counter()
         logger.debug(f"Received a new task with {len(task)} items.")
+
+        if not verify_signature(task, signature):
+            logger.error("Signature verification failed. aborting.")
+            return {"error": "Signature verification failed."}
 
         result = {}
         task_dict_list = [{"text": t} for t in task]
