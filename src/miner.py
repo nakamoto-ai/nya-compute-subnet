@@ -251,6 +251,10 @@ def main():
 
     args = parser.parse_args()
 
+    if not torch.cuda.is_available():
+        logger.error("CUDA is not available. aborting.")
+        raise ValueError("CUDA is not available.")
+
     logger.info(f"Miner configuration: {args}")
 
     batch_size = int(args.batch_size)
@@ -269,7 +273,6 @@ def main():
         else:
             logger.error("Port must be an integer. aborting.")
             raise ValueError("Port must be an integer.")
-
 
     try:
         key = classic_load_key(args.keyfile)
