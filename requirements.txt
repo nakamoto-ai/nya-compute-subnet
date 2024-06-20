@@ -8,3 +8,4 @@ accelerate
 bitsandbytes
 flash-attention
 gguf
+numpy==1.26.4
