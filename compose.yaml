@@ -20,7 +20,7 @@ services:
       # Setting the environment variables used in run_miner.sh script
       - PORT=1920
       - DEVICE=auto
-      - KEY_NAME=nya-miner # change this to your key name
+      - KEY_NAME=[KEY_NAME] # change this to your key name
     ports:
       - "1920:1920"
     deploy:
