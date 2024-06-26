@@ -2,7 +2,7 @@
 
 # **Nya - a Compute Subnet** <!-- omit in toc -->
 
-*Nya [means](https://www.thebump.com/b/nya-baby-name) purpose in Swahili*
+*Nya [means](https://www.thebump.com/b/swahili-baby-names) purpose in Swahili*
 
 by **Nakamoto Mining**, with the support of **Commune AI**
 
@@ -26,8 +26,9 @@ Please refer to the guide on how to [run a miner](docs/run_a_miner.md) to get st
 
 1. [Overview](#Overview)
 2. [Current Task: Knowledge Distillation](#task)
-3. [Frequently Asked Questions](#faq)
-4. [Future Plans](#future)
+3. [Technical Specifications](#technical)
+4. [Frequently Asked Questions](#faq)
+5. [Future Plans](#future)
 
 ## Overview
 
@@ -48,9 +49,9 @@ Consider the following example:
 
 If we were to train an LLM on "The sky is blue", the forth token "blue" would be considered the only correct token. At the same time, we know there are other possible tokens that could follow "The sky is," such as "clear", "beautiful", "cloudy", "dark", etc. With KD, we can capture signals other than the hard label "blue" and use them to train a smaller student model. As a result, we expect to have more efficient training and better generalization.
 
-Now, given a pre-trained model as teacher and a dataset, one can precompute and cache the teacher's outputs. Such outputs can be used for improving efficiency and reducing the computational cost of future training tasks. We have selected [Mistral-7B-Instruct-v0.3](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3) as the teacher. Mistral is a family of models released by Mistral AI under apache-2.0 License that is competitive with other commercial models such as GPT-3.5. 
+Now, given a pre-trained model as teacher and a dataset, one can precompute and cache the teacher's outputs. Such outputs can be used for improving efficiency and reducing the computational cost of future training tasks. We have selected [Phi-3-medium-4k-instruct](https://huggingface.co/microsoft/Phi-3-medium-4k-instruct) as the teacher. Phi-3, is a family of models released by Microsoft under MIT License that rivals models such as Mixtral 8x7B and GPT-3.5. 
 
-As for the dataset, we have selected [FineWeb](fineweb-blog), the largest (+15 trillion tokens, 44 TB of text!) and finest open source dataset available.  
+As for the dataset, we plan to start with [C4](https://huggingface.co/datasets/allenai/c4), a colossal, cleaned version of Common Crawl for the first release. In the future, we plan to switch to [FineWeb](fineweb-blog), the largest (+15 trillion tokens, 100 TB of text) and finest open source dataset available.  
 
 The precomputed teacher outputs collected in this subnet will be periodically released to the public under MIT License. These outputs can be used for future training tasks.
 
