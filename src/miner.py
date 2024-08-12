@@ -3,35 +3,33 @@ import base64
 import datetime
 import logging
 import time
+from communex.compat.key import classic_load_key
+from keylimiter import TokenBucketLimiter
+from communex.module.server import ModuleServer
+from torch.cuda import synchronize
 
 import torch
 import uvicorn
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 from Crypto.Signature import pkcs1_15
-from communex.compat.key import classic_load_key
 from communex.module import endpoint
 from communex.module.module import Module
-from communex.module.server import ModuleServer
 from datasets import Dataset
 from datasets.utils.logging import disable_progress_bar
-from keylimiter import TokenBucketLimiter
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 disable_progress_bar()
 
 time_str = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
 logging.basicConfig(
-    # filename=f"/logs/nya_miner_{time_str}.log",
-    # filemode='a',
     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
     datefmt='%H:%M:%S',
     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
-# logger.addHandler(logging.StreamHandler())
 
 logger.info(f"Running {__file__}")
 
@@ -43,7 +41,6 @@ def verify_signature(data, signature, public_key_path="keys/public.pem"):
     data_str = data
     if not isinstance(data, str):
         data_str = str(data)
-
     hash_value = SHA256.new(data_str.encode('utf-8'))
     signature = base64.b64decode(signature)
     try:
@@ -59,60 +56,32 @@ class NyaComputeMiner(Module):
     def __init__(self,
                  batch_size: int = 64,
                  device_map: str = "auto",
-                 # store_tasks: bool = False,
                  debug: bool = False
                  ):
         super().__init__()
 
         if debug:
-            # model_name = "google-bert/bert-base-cased"
             model_name = "distilbert/distilbert-base-uncased"
-            from transformers import AutoModelForMaskedLM
-            self.model = AutoModelForMaskedLM.from_pretrained(model_name,
-                                                              # trust_remote_code=True,
-                                                              # torch_dtype=torch.float16,
-                                                              # load_in_4bit=True,
-                                                              # device="cuda",
-                                                              # device_map=device_map
-                                                              )
-            self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-
+            self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
             self.model = self.model.to("cuda").half()
-
         else:
-            # model_name = "microsoft/Phi-3-mini-4k-instruct"
-            # model_name = "microsoft/Phi-3-mini-4k-instruct-gguf"
-            # file_name = "Phi-3-mini-4k-instruct-q4.gguf"
-            # minimal_loss_file_name = "Phi-3-mini-4k-instruct-fp16.gguf"
-            model_name = "MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF"
-            file_name = "Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
-
-            commit_hash = "ce89f595755a4bf2e2e05d155cc43cb847c78978"
-            self.model = AutoModelForCausalLM.from_pretrained(model_name,
-                                                              gguf_file=file_name,
-                                                              trust_remote_code=True,
-                                                              revision=commit_hash,
-                                                              # torch_dtype=torch.float16,
-                                                              # load_in_4bit=True,
-                                                              device_map=device_map
-                                                              )
-
-            self.tokenizer = AutoTokenizer.from_pretrained(model_name,
-                                                           trust_remote_code=True,
-                                                           gguf_file=file_name)
+            model_name = "google/t5-small"
+            commit_hash = "main"
+            self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name, revision=commit_hash)
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
 
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
         self.batch_size = batch_size
-        # self.store_tasks = store_tasks
 
         if device_map == "cuda" and not torch.cuda.is_available():
-            logger.error("CUDA is not available. aborting.")
+            logger.error("CUDA is not available. Aborting.")
             raise ValueError("CUDA is not available.")
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-
+        self.model = self.model.to(self.device)
         self.model.eval()
 
         device_info_list = []
@@ -122,7 +91,7 @@ class NyaComputeMiner(Module):
             device_dict = {}
             device_properties = torch.cuda.get_device_properties(i)
             for attr_name in attr_name_list:
-                if hasattr(torch.cuda.get_device_properties(i), attr_name):
+                if hasattr(device_properties, attr_name):
                     device_dict[attr_name] = getattr(device_properties, attr_name)
             device_info_list.append(device_dict)
 
@@ -131,109 +100,90 @@ class NyaComputeMiner(Module):
         logger.info(f"Initialized {self.__class__.__name__}, using device: {self.device}")
 
     def batch_encode(self, batch):
-        return self.tokenizer(batch["text"],
-                              # padding="max_length",
-                              max_length=1024,
-                              padding="longest",
-                              truncation=True,
-                              return_tensors="pt")
+        batch = dict(batch)
+        try:
+            # Handle different formats of input batch
+            if isinstance(batch, list):
+                texts = [item for sublist in batch for item in sublist.get("text", [])]
+            elif isinstance(batch, dict) and "text" in batch:
+                texts = batch["text"]
+            else:
+                raise ValueError(f"Unexpected batch format: {batch}")
+
+            # Use tokenizer to encode texts
+            encoded = self.tokenizer(
+                texts,
+                max_length=1024,
+                padding="longest",
+                truncation=True,
+                return_tensors="pt"
+            )
+
+            # Move encoded tensors to the correct device
+            for key, tensor in encoded.items():
+                encoded[key] = tensor.to(self.device)
+
+            # Prepare decoder input ids
+            decoder_start_token_id = self.model.config.decoder_start_token_id
+            decoder_input_ids = torch.full(
+                (encoded["input_ids"].shape[0], 1),
+                decoder_start_token_id,
+                dtype=torch.long,
+                device=self.device
+            )
+
+            encoded["decoder_input_ids"] = decoder_input_ids
+
+            # Debugging: Print tensor shapes
+            print(f"input_ids shape: {encoded['input_ids'].shape}")
+            print(f"attention_mask shape: {encoded['attention_mask'].shape}")
+            print(f"decoder_input_ids shape: {encoded['decoder_input_ids'].shape}")
+
+            return encoded
+
+        except Exception as e:
+            logger.error(f"Error processing batch: {e}")
+            raise
 
     @endpoint
-    def compute(self, task: list[str], signature: str):
-        start_time = time.perf_counter()
-        logger.debug(f"Received a new task with {len(task)} items.")
+    def compute(self, task: list[str]):
+        try:
+            input_data = Dataset.from_dict({"text": task})
+            encoded = input_data.map(self.batch_encode, batched=True, remove_columns=["text"])
 
-        if not verify_signature(task, signature):
-            logger.error("Signature verification failed. aborting.")
-            return {"error": "Signature verification failed."}
+            if "decoder_input_ids" not in encoded.column_names:
+                raise ValueError("Expected column 'decoder_input_ids' not found in the dataset")
 
-        result = {}
-        task_dict_list = [{"text": t} for t in task]
+            encoded.set_format(type="torch", columns=["input_ids", "attention_mask", "decoder_input_ids"])
 
-        input_data = Dataset.from_list(task_dict_list)
+            data_loader = DataLoader(encoded, batch_size=self.batch_size)
 
-        encoded = input_data.map(self.batch_encode,
-                                 batched=True,
-                                 remove_columns=["text"],
-                                 batch_size=self.batch_size,
-                                 )
+            all_probabilities = []
+            all_probabilities_index = []
 
-        # TODO: optimize for multi-GPU environments
-        # TODO: calculate the optimal batch size for the model
-
-        encoded.set_format(type="torch", columns=["input_ids", "attention_mask"])
-        data_loader = DataLoader(encoded, self.batch_size)
-        logger.debug(f"Data loaded in {time.perf_counter() - start_time:.2f} seconds")
-        # last_hidden_states = []
-        # logit_list = []
-        # logit_index_list = []
-        probabilities_list = []
-        probabilities_index_list = []
-        logger.debug(f"Starting forward pass...")
-        with torch.no_grad():
             for batch in data_loader:
                 batch = {k: v.to(self.device) for k, v in batch.items()}
-                try:
-                    output = self.model(**batch,
-                                        output_hidden_states=True,
-                                        return_dict=True
-                                        )
-                    probabilities = torch.nn.functional.softmax(output.logits, dim=-1)
 
-                    top_k_probabilities, top_k_probabilities_indices = torch.topk(probabilities, 16, dim=-1)
+                output = self.model(
+                    input_ids=batch["input_ids"],
+                    attention_mask=batch["attention_mask"],
+                    decoder_input_ids=batch["decoder_input_ids"]
+                )
 
-                    for i in range(batch["input_ids"].shape[0]):
-                        indices = torch.nonzero(batch["attention_mask"][i])
-                        probabilities_list.append(top_k_probabilities[i][indices])
-                        probabilities_index_list.append(top_k_probabilities_indices[i][indices])
+                logits = output.logits.detach().cpu().numpy()
+                probabilities = logits.tolist()
 
-                except RuntimeError as e:  # Out of memory
-                    logger.error(
-                        f"Out of memory, skipping batch. batch size: {self.batch_size}, length: {batch['input_ids'].shape[1]}")
-                    invalid_result = torch.ones(1, dtype=torch.float16) * -1.0
-                    for i in range(self.batch_size):
-                        probabilities_list.append(invalid_result)
-                        probabilities_index_list.append(invalid_result)
-                    # logger.error(e)
-                    # raise RuntimeError("Out of memory.")
+                all_probabilities.extend(probabilities)
+                all_probabilities_index.extend(list(range(len(probabilities))))
 
-                # top_k_logit, top_k_indices = torch.topk(output.logits, 16, dim=-1)
-                # logit_list.append(top_k_logit)
-                # logit_index_list.append(top_k_indices)
-        logger.debug(f"Forward pass completed in {time.perf_counter() - start_time:.2f} seconds")
+            result = {
+                'probabilities': all_probabilities,
+                'probabilities_index': all_probabilities_index
+            }
 
-        # logit = torch.cat(logit_list, dim=0).to(torch.float16)
-        # logit_index = torch.cat(logit_index_list, dim=0).to(torch.int16)
-
-        # task_probabilities = torch.cat(probabilities_list, dim=0).to(torch.float16)
-        # task_probabilities_index = torch.cat(probabilities_index_list, dim=0).to(torch.int16)
-
-        probabilities_list = [p.to(torch.float16).cpu().numpy().tolist() for p in probabilities_list]
-        probabilities_index_list = [p.to(torch.int16).cpu().numpy().tolist() for p in probabilities_index_list]
-
-        end_time = time.perf_counter()
-
-        elapsed_time = end_time - start_time
-
-        # TODO: numpy().tobytes() is preferred over numpy().tolist() for performance reasons
-        # TODO: however, transferring bytes causes a serialization error
-
-        # last_hidden_states_bytes = [[l.numpy().tobytes() for l in batch] for batch in last_hidden_states]
-        result["elapsed_time"] = elapsed_time
-        # result["logit"] = logit.cpu().numpy().tolist()
-        # result["logit_index"] = logit_index.cpu().numpy().tolist()
-        result["probabilities"] = probabilities_list
-        result["probabilities_index"] = probabilities_index_list
-
-        result["device_info"] = self.device_info
-        result["miner_version"] = self.version
-        logger.debug(f"Compute task completed in {elapsed_time:.2f} seconds")
-
-        # TODO: must run in a separate thread to avoid delaying the response
-        # if self.store_tasks:
-        #     current_time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        #     data_df = pd.DataFrame(task, columns=["text"])
-        #     data_df.to_csv(f"task_{current_time_str}.csv", index=False)
+        except Exception as e:
+            logger.error(f"Error during computation: {e}")
+            raise
 
         return result
 
@@ -246,13 +196,13 @@ def main():
     parser.add_argument("--port", help="Port to bind the server to.", default=9910)
     parser.add_argument("--device_map", help="Device to run the model on.", default="auto")
     parser.add_argument("--batch_size", help="Batch size for the model.", default=1, type=int)
-    parser.add_argument("--subnetuid", help="Subnet UID to bind the server to.", default=8)
-    parser.add_argument("--testnet", help="Use testnet.", default=False)
+    parser.add_argument("--subnetuid", help="Subnet UID to bind the server to.", default=23)
+    parser.add_argument("--testnet", help="Use testnet.", default=True)
 
     args = parser.parse_args()
 
     if not torch.cuda.is_available():
-        logger.error("CUDA is not available. aborting.")
+        logger.error("CUDA is not available. Aborting.")
         raise ValueError("CUDA is not available.")
 
     logger.info(f"Miner configuration: {args}")
@@ -262,7 +212,6 @@ def main():
     miner = NyaComputeMiner(
         batch_size=batch_size,
         device_map=args.device_map,
-        # store_tasks=args.store_tasks
     )
 
     port = args.port
@@ -270,33 +219,36 @@ def main():
     if not isinstance(port, int):
         if isinstance(port, str) and port.isdigit():
             port = int(port)
-        else:
-            logger.error("Port must be an integer. aborting.")
-            raise ValueError("Port must be an integer.")
+    # Handle if it's a string but not a number
+    else:
+        logger.error("Port must be an integer. Aborting.")
+        raise ValueError("Port must be an integer.")
 
     try:
         key = classic_load_key(args.keyfile)
     except FileNotFoundError:
-        logger.error(f"Key file {args.keyfile} not found. aborting.")
+        logger.error(f"Key file {args.keyfile} not found. Aborting.")
         raise FileNotFoundError(f"Key file {args.keyfile} not found.")
 
-    refill_rate = 1  #
+    refill_rate = 1  # Set your desired refill rate
 
-    # Implementing custom limit
-    # TODO: investigate the impact of TokenBucketLimiter
-    bucket = TokenBucketLimiter(30, refill_rate)
+    bucket = TokenBucketLimiter(30, refill_rate)  # Initialize your TokenBucketLimiter
 
     if args.testnet:
         logger.info("Using testnet")
 
-    server = ModuleServer(miner,
-                          key,
-                          limiter=bucket,
-                          subnets_whitelist=[args.subnetuid],
-                          use_testnet=args.testnet)
-    app = server.get_fastapi_app()
+    # Initialize the ModuleServer with the miner and other configurations
+    server = ModuleServer(
+        miner,
+        key,
+        limiter=bucket,
+        subnets_whitelist=[args.subnetuid],
+        use_testnet=args.testnet
+    )
 
-    uvicorn.run(app, host=args.ip, port=port)
+    app = server.get_fastapi_app()  # Get FastAPI app from server
+
+    uvicorn.run(app, host=args.ip, port=port)  # Run the server with uvicorn
 
 
 if __name__ == "__main__":
