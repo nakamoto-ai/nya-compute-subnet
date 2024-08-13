@@ -90,7 +90,7 @@
 4. Register the miner with the subnet, replacing `[KEY_NAME]`, `[IP]`, and `[PORT]` with values set in the environment
    variables.
     ```bash
-    comx module register [MINER_NAME] [KEY_NAME] --ip [IP] --port [PORT] --netuid 8
+   comx module register [$MINER_NAME] [$KEY_NAME] 8 --ip [$IP] --port [$PORT]
     ```
 
 ### Troubleshooting
