@@ -85,3 +85,6 @@ In the future, subnet stakeholders will be able to vote on the network's directi
 [fineweb-blog]: https://huggingface.co/spaces/HuggingFaceFW/blogpost-fineweb-v1
 
 
+## Run a Validator
+[Validator Setup](docs/run_validator.md)
+
